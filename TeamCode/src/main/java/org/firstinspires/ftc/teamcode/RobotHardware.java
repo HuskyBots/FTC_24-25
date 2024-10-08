@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.annotation.SuppressLint;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -7,21 +9,16 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
 /*
- * This file works in conjunction with the External Hardware Class sample called: ConceptExternalHardwareClass.java
- * Please read the explanations in that Sample about how to use this class definition.
- *
- * This file defines a Java Class that performs all the setup and configuration for a sample robot's hardware (motors and sensors).
- * It assumes three motors (left_drive, right_drive and arm) and two servos (left_hand and right_hand)
- *
- * This one file/class can be used by ALL of your OpModes without having to cut & paste the code each time.
+ * This file defines a Java Class that performs all the setup and configuration for our robot's hardware (motors and sensors).
  *
  * Where possible, the actual hardware objects are "abstracted" (or hidden) so the OpMode code just makes calls into the class,
  * rather than accessing the internal hardware directly. This is why the objects are declared "private".
  */
 public class RobotHardware {
 
-    // Declare OpMode members
-    private LinearOpMode myOpMode = null;  // pega e extends o LinearOpMode pro myOpMode, onde a gnt so vai usar ele
+    // Declare OpMode and TelemetryHandler members
+    private final LinearOpMode myOpMode;  // pega e extends o LinearOpMode pro myOpMode, onde a gnt so vai usar ele
+    private final TelemetryHandler telemetryHandler;
 
     // Define Motor and Servo objects  (Make them private so they can't be accessed externally)
     private DcMotor leftFrontDrive, leftBackDrive, rightFrontDrive, rightBackDrive = null;  // todos os drive motors
@@ -29,16 +26,20 @@ public class RobotHardware {
     private CRServo cServo4, cServo5 = null;  // continuous rotation servos do control hub (4-5)
 
     // Define Drive constants.  Make them public so they CAN be used by the calling OpMode
-    public static final double LOW_SERVO       =  0.0  ;
-    public static final double MID_SERVO       =  0.5  ;
-    public static final double HIGH_SERVO      =  1.0  ;
-    public static final double HAND_SPEED      =  0.02 ;  // sets rate to move servo
-    public static final double ARM_UP_POWER    =  0.45 ;
-    public static final double ARM_DOWN_POWER  = -0.45 ;
+    public  static final double LOW_SERVO       =  0.0  ;
+    public  static final double MID_SERVO       =  0.5  ;
+    public  static final double HIGH_ARM        =  0.75 ;
+    public  static final double HIGH_SERVO      =  1.0  ;
+    private static final double SERVO_INCREMENT =  0.01 ;  // Step size for smoothing
+    private static final int    SERVO_DELAY_MS  =  20   ;  // Delay between steps for smoothing
+//  public static final double HAND_SPEED      =  0.02 ;  // sets rate to move servo
+//  public static final double ARM_UP_POWER    =  0.45 ;
+//  public static final double ARM_DOWN_POWER  = -0.45 ;
 
     // Define a constructor that allows the OpMode to pass a reference to itself.
     public RobotHardware(LinearOpMode opmode) {
         myOpMode = opmode;
+        telemetryHandler = new TelemetryHandler(opmode);
     }
 
     /**
@@ -48,61 +49,83 @@ public class RobotHardware {
      */
     public void init() {
         try {
+            // Initialize drive motors
             leftFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "left_front_drive");
             leftBackDrive = myOpMode.hardwareMap.get(DcMotor.class, "left_back_drive");
             rightFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "right_front_drive");
             rightBackDrive = myOpMode.hardwareMap.get(DcMotor.class, "right_back_drive");
 
-            myOpMode.telemetry.addData("Motor Init", "Success");
-
-            // Servo initialization
+            // Initialize normal servos
             armBase = myOpMode.hardwareMap.get(Servo.class, "ch_nServo0");
             armClaw = myOpMode.hardwareMap.get(Servo.class, "ch_nServo1");
-            myOpMode.telemetry.addData("Servo Init", "Success");
+            nServo2 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo2");
+            nServo3 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo3");
+
+            // Initialize continuous rotation servos
+            cServo4 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo4");
+            cServo5 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo5");
+
+            // Update telemetry for successful initialization
+            telemetryHandler.addOrUpdate("Status", "Hardware Initialized");
+            telemetryHandler.update();
 
         } catch (Exception e) {
-            myOpMode.telemetry.addData("Hardware Error", e.getMessage());
+            telemetryHandler.addOrUpdate("Hardware Error", e.getMessage());
+            telemetryHandler.update();
         }
 
         myOpMode.telemetry.update();
 
-        // Define and Initialize Motors (note: need to use reference to actual OpMode).
-
-        // Motores (drive):
-        leftFrontDrive  =  myOpMode.hardwareMap.get(DcMotor.class, "left_front_drive");
-        leftBackDrive   =  myOpMode.hardwareMap.get(DcMotor.class, "left_back_drive");
-        rightFrontDrive =  myOpMode.hardwareMap.get(DcMotor.class, "right_front_drive");
-        rightBackDrive  =  myOpMode.hardwareMap.get(DcMotor.class, "right_back_drive");
-
-        // define as direções dos motores. se ta no codigo eh pq (provavelmente) ta certo
+        // Define motor directions
         leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
 
-        // bota pra run os motores com encoder pra melhorar a precisão
+        // Set motors to run using encoders
         leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        // Normal servos:
-        armBase = myOpMode.hardwareMap.get(Servo.class, "ch_nServo0");
-        armClaw = myOpMode.hardwareMap.get(Servo.class, "ch_nServo1");
-        nServo2 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo2");
-        nServo3 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo3");
-
-        // inicia servo no low position
+        // Initialize servos to their starting positions
         armBase.setPosition(LOW_SERVO);
         armClaw.setPosition(LOW_SERVO);
 
-        // Continuous rotation servos:
-        cServo4 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo4");
-        cServo5 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo5");
+        // Provide final telemetry update
+        telemetryHandler.update();
+    }
 
-        // so faz um update da telemetria
-        myOpMode.telemetry.addData(">", "Hardware Initialized");
-        myOpMode.telemetry.update();
+    // Method to move the arm smoothly from current position to a target position
+    public void moveServoSmoothly(Servo servo, double targetPosition) {
+        double currentPosition = servo.getPosition();
+        targetPosition = Range.clip(targetPosition, 0.0, 1.0);  // Ensure position is between 0 and 1
+
+        while (Math.abs(targetPosition - currentPosition) > SERVO_INCREMENT) {
+            if (targetPosition > currentPosition) {
+                currentPosition += SERVO_INCREMENT;
+            } else {
+                currentPosition -= SERVO_INCREMENT;
+            }
+            servo.setPosition(currentPosition);
+            telemetryHandler.addOrUpdate("Servo Position", String.valueOf(currentPosition));
+            telemetryHandler.update();
+            myOpMode.sleep(SERVO_DELAY_MS);  // Delay between steps
+        }
+        // Ensure the final position is exactly the target
+        servo.setPosition(targetPosition);
+        telemetryHandler.addOrUpdate("Final Position", String.valueOf(targetPosition));
+        telemetryHandler.update();
+    }
+
+    // Public method to control arm with smoothing
+    public void moveArmBaseSmoothly(double targetPosition) {
+        moveServoSmoothly(armBase, targetPosition);
+    }
+
+    // Public method to control claw with smoothing
+    public void moveArmClawSmoothly(double targetPosition) {
+        moveServoSmoothly(armClaw, targetPosition);
     }
 
     /**
@@ -110,8 +133,8 @@ public class RobotHardware {
      * Call this method before the robot fully stops.
      */
     public void performShutdownTask() {
-        myOpMode.telemetry.addData("Task", "Moving servos to safe position...");
-        myOpMode.telemetry.update();
+        telemetryHandler.addOrUpdate("Task", "Moving servos to safe position...");
+        telemetryHandler.update();
 
         setArmBasePosition(LOW_SERVO);
     }
@@ -126,8 +149,8 @@ public class RobotHardware {
         // Check if the arm has reached the target position
         double currentPosition = getArmBasePosition();
         boolean completed = Math.abs(currentPosition - LOW_SERVO) < 0.1;
-        myOpMode.telemetry.addData("Task Status", completed ? "Completed" : "In Progress");
-        myOpMode.telemetry.update();
+        telemetryHandler.addOrUpdate("Task Status", completed ? "Completed" : "In Progress");
+        telemetryHandler.update();
         return completed;
     }
 
@@ -157,6 +180,7 @@ public class RobotHardware {
      * @param theta  Direction of movement, calculated using atan2 from joystick inputs (in radians).
      * @param turn   Turning input (yaw), controlling the rotation of the robot (-1.0 to 1.0).
      */
+    @SuppressLint("DefaultLocale")
     public void controlMecanum(double power, double theta, double turn) {
         // seno e cosseno
         double sin = Math.sin(theta - Math.PI / 4);
@@ -186,9 +210,9 @@ public class RobotHardware {
         rightBackDrive.setPower(rightRearPower);
 
         // display a telemetria
-        myOpMode.telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
-        myOpMode.telemetry.addData("Back left/Right", "%4.2f, %4.2f", leftRearPower, rightRearPower);
-        myOpMode.telemetry.update();
+        telemetryHandler.addOrUpdate("Front left/Right", String.format("%4.2f, %4.2f", leftFrontPower, rightFrontPower));
+        telemetryHandler.addOrUpdate("Back left/Right", String.format("%4.2f, %4.2f", leftRearPower, rightRearPower));
+        telemetryHandler.update();
     }
 
     // Public method to set the armBase position
@@ -201,13 +225,30 @@ public class RobotHardware {
         armClaw.setPosition(position);
     }
 
-    // Public method to get the current position of the armBase
+    /*
+     * Getter methods
+     */
     public double getArmBasePosition() {
         return armBase.getPosition();
     }
 
-    // Public method to get the current position of the armClaw
     public double getArmClawPosition() {
         return armClaw.getPosition();
+    }
+
+    public double getLeftFrontPower() {
+        return leftFrontDrive.getPower();
+    }
+
+    public double getRightFrontPower() {
+        return rightFrontDrive.getPower();
+    }
+
+    public double getLeftBackPower() {
+        return leftBackDrive.getPower();
+    }
+
+    public double getRightBackPower() {
+        return rightBackDrive.getPower();
     }
 }

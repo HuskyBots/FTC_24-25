@@ -1,21 +1,28 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.annotation.SuppressLint;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 @TeleOp(name = "Arm Control OpMode", group = "Individual Tests")
 public class ArmOpMode extends LinearOpMode {
     private final RobotHardware robot = new RobotHardware(this);
+    private TelemetryHandler telemetryHandler;
 
     private boolean isArmUp = false;
     private boolean isClawClosed = false;
 
-    private boolean buttonPressed1X = false;
+    private boolean buttonPressed1Cross = false;
     private boolean buttonPressed1Circle = false;
 
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() {
         robot.init();
+        telemetryHandler = new TelemetryHandler(this);
+
+        telemetryHandler.initializeDefaults();
+
         waitForStart();
 
         while (opModeIsActive()) {
@@ -24,48 +31,51 @@ public class ArmOpMode extends LinearOpMode {
             handleClawControl();
 
             // Add telemetry to confirm the loop is running
-            telemetry.addData("Loop Running", true);
-            telemetry.update();
+            telemetryHandler.addOrUpdate("Loop Status", "Running");
+            telemetryHandler.update();
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private void handleMovement() {
         robot.driveMecanum();
+        telemetryHandler.addOrUpdate("Front Wheel Powers", String.format("Front left: %.2f, Front right: %.2f",
+                robot.getLeftFrontPower(), robot.getRightFrontPower()));
+        telemetryHandler.addOrUpdate("Back Wheel Powers", String.format("Back left: %.2f, Back right: %.2f",
+                robot.getLeftBackPower(), robot.getRightBackPower()));
     }
 
     private void handleArmControl() {
-        telemetry.addData("X Button", gamepad1.cross ? "Pressed" : "Not Pressed");
+        telemetryHandler.addOrUpdate("X Button", gamepad1.cross ? "Pressed" : "Not Pressed");
 
-        if (gamepad1.cross && !buttonPressed1X) {
+        if (gamepad1.cross && !buttonPressed1Cross) {
             if (isArmUp) {
-                robot.setArmBasePosition(RobotHardware.LOW_SERVO);
-                telemetry.addData("Arm", "Lowered");
+                robot.moveArmBaseSmoothly(RobotHardware.LOW_SERVO);
+                telemetryHandler.addOrUpdate("Arm", "Lowered");
             } else {
-                robot.setArmBasePosition(RobotHardware.HIGH_SERVO);
-                telemetry.addData("Arm", "Raised");
+                robot.moveArmBaseSmoothly(RobotHardware.HIGH_ARM);
+                telemetryHandler.addOrUpdate("Arm", "Raised");
             }
             isArmUp = !isArmUp;
-            buttonPressed1X = true;
-            telemetry.update(); // Update telemetry immediately
+            buttonPressed1Cross = true;
         } else if (!gamepad1.cross) {
-            buttonPressed1X = false;
+            buttonPressed1Cross = false;
         }
     }
 
     private void handleClawControl() {
-        telemetry.addData("Circle Button", gamepad1.circle ? "Pressed" : "Not Pressed");
+        telemetryHandler.addOrUpdate("Circle Button", gamepad1.circle ? "Pressed" : "Not Pressed");
 
         if (gamepad1.circle && !buttonPressed1Circle) {
             if (isClawClosed) {
-                robot.setArmClawPosition(RobotHardware.LOW_SERVO);
-                telemetry.addData("Claw", "Opened");
+                robot.moveArmClawSmoothly(RobotHardware.LOW_SERVO);
+                telemetryHandler.addOrUpdate("Claw", "Opened");
             } else {
-                robot.setArmClawPosition(RobotHardware.HIGH_SERVO);
-                telemetry.addData("Claw", "Closed");
+                robot.moveArmClawSmoothly(RobotHardware.HIGH_SERVO);
+                telemetryHandler.addOrUpdate("Claw", "Closed");
             }
             isClawClosed = !isClawClosed;
             buttonPressed1Circle = true;
-            telemetry.update(); // Update telemetry immediately
         } else if (!gamepad1.circle) {
             buttonPressed1Circle = false;
         }
