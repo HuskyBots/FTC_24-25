@@ -5,7 +5,7 @@ import android.annotation.SuppressLint;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name = "Arm Control OpMode", group = "Individual Tests")
+@TeleOp(name = "Arm Control OpMode", group = "Full Tests")
 public class ArmOpMode extends LinearOpMode {
     private final RobotHardware robot = new RobotHardware(this);
     private TelemetryHandler telemetryHandler;
