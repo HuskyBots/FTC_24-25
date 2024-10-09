@@ -61,10 +61,10 @@ public class RobotHardware {
     public void init() {
         try {
             // Initialize drive motors from the hardware map using their configuration names.
-            leftFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "left_front_drive");
-            leftBackDrive = myOpMode.hardwareMap.get(DcMotor.class, "left_back_drive");
+            leftFrontDrive  = myOpMode.hardwareMap.get(DcMotor.class, "left_front_drive");
+            leftBackDrive   = myOpMode.hardwareMap.get(DcMotor.class, "left_back_drive");
             rightFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "right_front_drive");
-            rightBackDrive = myOpMode.hardwareMap.get(DcMotor.class, "right_back_drive");
+            rightBackDrive  = myOpMode.hardwareMap.get(DcMotor.class, "right_back_drive");
 
             // Initialize standard servos from the hardware map.
             armBase = myOpMode.hardwareMap.get(Servo.class, "ch_nServo0");

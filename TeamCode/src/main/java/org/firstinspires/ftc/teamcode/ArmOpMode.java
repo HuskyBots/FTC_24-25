@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import android.annotation.SuppressLint;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;  // Base class for OpModes
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;       // Annotation for TeleOp mode
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;        // Annotation for TeleOp mode
 
 /**
  * This OpMode class controls the robot's arm and claw mechanisms, as well as driving using mecanum wheels.
@@ -103,7 +103,7 @@ public class ArmOpMode extends LinearOpMode {
     }
 
     /**
-     * Handles the claw control based on the 'circle' button (typically the B button) on the gamepad.
+     * Handles the claw control based on the 'circle' button on the gamepad.
      * Toggles the claw position between open and closed when the button is pressed.
      */
     private void handleClawControl() {
