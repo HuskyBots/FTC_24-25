@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import android.annotation.SuppressLint;
-
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo; // Continuous Rotation Servo
 import com.qualcomm.robotcore.hardware.DcMotor; // DC Motor
@@ -44,11 +43,15 @@ public class RobotHardware {
     public static final double HIGH_ARM = 0.75;       // High position for the arm servo
     public static final double HIGH_SERVO = 1.0;      // Maximum servo position
 
-    // To review this implementation, and rather consider adding speed and power coefficients.
-    private static final double SERVO_INCREMENT = 0.01; // Increment for smooth servo movement
-    private static final int SERVO_DELAY_MS = 20;       // Delay between servo increments (in milliseconds)
+    // Increment for smooth servo movement and delay between increments (in milliseconds).
+    private static final double SERVO_INCREMENT = 0.01;
+    private static final int SERVO_DELAY_MS = 20;
 
-    // Constructor that accepts a reference to the OpMode that is using this hardware class.
+    /**
+     * Constructor that accepts a reference to the OpMode that is using this hardware class.
+     *
+     * @param opmode The LinearOpMode instance.
+     */
     public RobotHardware(LinearOpMode opmode) {
         myOpMode = opmode;
         telemetryHandler = new TelemetryHandler(opmode);
@@ -77,13 +80,13 @@ public class RobotHardware {
             cServo5 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo5");
 
             // Update telemetry to indicate successful hardware initialization.
-            telemetryHandler.addOrUpdate("Status", "Hardware Initialized");
-            telemetryHandler.update();
+            telemetryHandler.edit("Hardware Initialized", "Status.Hardware");
+            telemetryHandler.display("Status.Hardware");
 
         } catch (Exception e) {
             // If there is an error during initialization, display the error message.
-            telemetryHandler.addOrUpdate("Hardware Error", e.getMessage());
-            telemetryHandler.update();
+            telemetryHandler.edit(e.getMessage(), "Status.Hardware Error");
+            telemetryHandler.display("Status.Hardware Error");
         }
 
         // Configure motor directions. Reverse the direction of specific motors to match physical configuration.
@@ -102,6 +105,11 @@ public class RobotHardware {
         armBase.setPosition(LOW_SERVO);
         armClaw.setPosition(LOW_SERVO);
 
+        // Update the positions in telemetry.
+        telemetryHandler.edit(LOW_SERVO, "Robot.Arm Position");
+        telemetryHandler.edit(LOW_SERVO, "Robot.Claw Position");
+        telemetryHandler.display("Robot.Arm Position", "Robot.Claw Position");
+
         // Final telemetry update after initialization.
         telemetryHandler.update();
     }
@@ -112,9 +120,10 @@ public class RobotHardware {
      *
      * @param servo          The servo object to move.
      * @param targetPosition The desired target position (range from 0.0 to 1.0).
+     * @param telemetryPath  The telemetry path to update with the servo position.
      */
     @SuppressLint("DefaultLocale")
-    public void moveServoSmoothly(Servo servo, double targetPosition) {
+    private void moveServoSmoothly(Servo servo, double targetPosition, String telemetryPath) {
         double currentPosition = servo.getPosition();
         targetPosition = Range.clip(targetPosition, 0.0, 1.0); // Ensure target position is within valid range.
 
@@ -128,8 +137,8 @@ public class RobotHardware {
             servo.setPosition(currentPosition);
 
             // Update telemetry with the current servo position.
-            telemetryHandler.addOrUpdate("Servo Position", String.format("%.2f", currentPosition));
-            telemetryHandler.update();
+            telemetryHandler.edit(String.format("%.2f", currentPosition), telemetryPath);
+            telemetryHandler.display(telemetryPath);
 
             // Pause briefly between increments for smooth movement.
             myOpMode.sleep(SERVO_DELAY_MS);
@@ -139,7 +148,7 @@ public class RobotHardware {
         servo.setPosition(targetPosition);
 
         // Update telemetry with the final position.
-        telemetryHandler.addOrUpdate("Final Position", String.format("%.2f", targetPosition));
+        telemetryHandler.edit(String.format("%.2f", targetPosition), telemetryPath);
         telemetryHandler.update();
     }
 
@@ -149,7 +158,7 @@ public class RobotHardware {
      * @param targetPosition The desired target position for the arm base servo (0.0 to 1.0).
      */
     public void moveArmBaseSmoothly(double targetPosition) {
-        moveServoSmoothly(armBase, targetPosition);
+        moveServoSmoothly(armBase, targetPosition, "Robot.Arm Position");
     }
 
     /**
@@ -158,7 +167,7 @@ public class RobotHardware {
      * @param targetPosition The desired target position for the arm claw servo (0.0 to 1.0).
      */
     public void moveArmClawSmoothly(double targetPosition) {
-        moveServoSmoothly(armClaw, targetPosition);
+        moveServoSmoothly(armClaw, targetPosition, "Robot.Claw Position");
     }
 
     /**
@@ -166,11 +175,12 @@ public class RobotHardware {
      * This method should be called before the robot fully stops to ensure hardware is in a safe state.
      */
     public void performShutdownTask() {
-        telemetryHandler.addOrUpdate("Task", "Moving servos to safe position...");
+        telemetryHandler.edit("Moving servos to safe position...", "Status.Task");
+        telemetryHandler.display("Status.Task");
         telemetryHandler.update();
 
         // Move the arm base to the lowest position for safety.
-        setArmBasePosition(LOW_SERVO);
+        moveArmBaseSmoothly(LOW_SERVO);
     }
 
     /**
@@ -183,10 +193,11 @@ public class RobotHardware {
         // Get the current position of the arm base servo.
         double currentPosition = getArmBasePosition();
         // Determine if the position is close enough to the LOW_SERVO position.
-        boolean completed = Math.abs(currentPosition - LOW_SERVO) < 0.1;
+        boolean completed = Math.abs(currentPosition - LOW_SERVO) < 0.01;
 
         // Update telemetry with the task status.
-        telemetryHandler.addOrUpdate("Task Status", completed ? "Completed" : "In Progress");
+        telemetryHandler.edit(completed ? "Completed" : "In Progress", "Status.Task Status");
+        telemetryHandler.display("Status.Task Status");
         telemetryHandler.update();
 
         return completed;
@@ -203,9 +214,24 @@ public class RobotHardware {
         double y = -myOpMode.gamepad1.left_stick_y;   // Forward/backward movement (inverted).
         double turn = myOpMode.gamepad1.right_stick_x; // Rotation (turning left/right).
 
+        // Update raw control inputs in telemetry.
+        telemetryHandler.edit(String.format("%.2f", x), "Controls.Raw.Raw Left Stick X");
+        telemetryHandler.edit(String.format("%.2f", y), "Controls.Raw.Raw Left Stick Y");
+        telemetryHandler.edit(String.format("%.2f", turn), "Controls.Raw.Raw Right Stick X");
+
         // Convert joystick inputs to polar coordinates (magnitude and direction).
         double theta = Math.atan2(y, x);              // Direction angle in radians.
         double power = Math.hypot(x, y);              // Magnitude of movement.
+
+        // Update processed control inputs in telemetry.
+        telemetryHandler.edit(String.format("%.2f", power), "Controls.Processed.Power");
+        telemetryHandler.edit(String.format("%.2f", theta), "Controls.Processed.Theta");
+        telemetryHandler.edit(String.format("%.2f", turn), "Controls.Processed.Turn");
+        telemetryHandler.display(
+                "Controls.Processed.Power",
+                "Controls.Processed.Theta",
+                "Controls.Processed.Turn"
+        );
 
         // Call the method to control the mecanum wheels with calculated parameters.
         controlMecanum(power, theta, turn);
@@ -219,8 +245,8 @@ public class RobotHardware {
      * @param theta Direction of movement in radians.
      * @param turn  Turning input (-1.0 to 1.0), where positive values turn right.
      */
-    @SuppressLint("DefaultLocale") // Suppresses locale warnings for String.format().
-    public void controlMecanum(double power, double theta, double turn) {
+    @SuppressLint("DefaultLocale")
+    private void controlMecanum(double power, double theta, double turn) {
         // Calculate the sine and cosine components for the desired direction.
         double sin = Math.sin(theta - Math.PI / 4);
         double cos = Math.cos(theta - Math.PI / 4);
@@ -251,10 +277,16 @@ public class RobotHardware {
         rightBackDrive.setPower(rightRearPower);
 
         // Update telemetry with the motor power values.
-        telemetryHandler.addOrUpdate("Front left/Right",
-                String.format("%.2f, %.2f", leftFrontPower, rightFrontPower));
-        telemetryHandler.addOrUpdate("Back left/Right",
-                String.format("%.2f, %.2f", leftRearPower, rightRearPower));
+        telemetryHandler.edit(String.format("%.2f", leftFrontPower), "Motors.Left Front Power");
+        telemetryHandler.edit(String.format("%.2f", rightFrontPower), "Motors.Right Front Power");
+        telemetryHandler.edit(String.format("%.2f", leftRearPower), "Motors.Left Rear Power");
+        telemetryHandler.edit(String.format("%.2f", rightRearPower), "Motors.Right Rear Power");
+        telemetryHandler.display(
+                "Motors.Left Front Power",
+                "Motors.Right Front Power",
+                "Motors.Left Rear Power",
+                "Motors.Right Rear Power"
+        );
         telemetryHandler.update();
     }
 
@@ -265,6 +297,9 @@ public class RobotHardware {
      */
     public void setArmBasePosition(double position) {
         armBase.setPosition(position);
+        telemetryHandler.edit(String.format("%.2f", position), "Robot.Arm Position");
+        telemetryHandler.display("Robot.Arm Position");
+        telemetryHandler.update();
     }
 
     /**
@@ -274,6 +309,9 @@ public class RobotHardware {
      */
     public void setArmClawPosition(double position) {
         armClaw.setPosition(position);
+        telemetryHandler.edit(String.format("%.2f", position), "Robot.Claw Position");
+        telemetryHandler.display("Robot.Claw Position");
+        telemetryHandler.update();
     }
 
     /*

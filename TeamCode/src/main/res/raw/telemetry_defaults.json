@@ -1,0 +1,23 @@
+{
+  "Robot": {
+    "Arm Position": "Unknown",
+    "Claw Position": "Unknown"
+  },
+  "Controls": {
+    "Raw": {
+      "Raw Left Stick X": "0.0",
+      "Raw Left Stick Y": "0.0",
+      "Raw Right Stick X": "0.0",
+      "Raw Right Stick Y": "0.0"
+    },
+    "Processed": {
+      "Scaled Left Stick X": "0.0",
+      "Scaled Left Stick Y": "0.0",
+      "Scaled Right Stick X": "0.0",
+      "Scaled Right Stick Y": "0.0"
+    }
+  },
+  "Status": {
+    "Loop Status": "Waiting for Start"
+  }
+}
