@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo; // Continuous Rotation Servo
 import com.qualcomm.robotcore.hardware.DcMotor; // DC Motor
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;   // Standard Servo
 import com.qualcomm.robotcore.util.Range;       // Utility for value clamping
 
@@ -64,20 +65,20 @@ public class RobotHardware {
     public void init() {
         try {
             // Initialize drive motors from the hardware map using their configuration names.
-            leftFrontDrive  = myOpMode.hardwareMap.get(DcMotor.class, "left_front_drive");
-            leftBackDrive   = myOpMode.hardwareMap.get(DcMotor.class, "left_back_drive");
-            rightFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "right_front_drive");
-            rightBackDrive  = myOpMode.hardwareMap.get(DcMotor.class, "right_back_drive");
+            leftFrontDrive  = myOpMode.hardwareMap.get(DcMotor.class, "leftFront");
+            leftBackDrive   = myOpMode.hardwareMap.get(DcMotor.class, "leftBack");
+            rightFrontDrive = myOpMode.hardwareMap.get(DcMotor.class, "rightFront");
+            rightBackDrive  = myOpMode.hardwareMap.get(DcMotor.class, "rightBack");
 
             // Initialize standard servos from the hardware map.
-            armBase = myOpMode.hardwareMap.get(Servo.class, "ch_nServo0");
-            armClaw = myOpMode.hardwareMap.get(Servo.class, "ch_nServo1");
-            nServo2 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo2");
-            nServo3 = myOpMode.hardwareMap.get(Servo.class, "ch_nServo3");
+            armBase = myOpMode.hardwareMap.get(Servo.class, "s0");
+            armClaw = myOpMode.hardwareMap.get(Servo.class, "s1");
+            nServo2 = myOpMode.hardwareMap.get(Servo.class, "s2");
+            nServo3 = myOpMode.hardwareMap.get(Servo.class, "s3");
 
             // Initialize continuous rotation servos from the hardware map.
-            cServo4 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo4");
-            cServo5 = myOpMode.hardwareMap.get(CRServo.class, "ch_cServo5");
+            cServo4 = myOpMode.hardwareMap.get(CRServo.class, "cs4");
+            cServo5 = myOpMode.hardwareMap.get(CRServo.class, "cs5");
 
             // Update telemetry to indicate successful hardware initialization.
             telemetryHandler.edit("Hardware Initialized", "Status.Hardware");
@@ -90,8 +91,8 @@ public class RobotHardware {
         }
 
         // Configure motor directions. Reverse the direction of specific motors to match physical configuration.
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
 
