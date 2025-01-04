@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,9 @@ public class RobotCentricDrive extends LinearOpMode {
     Servo bufferServo;
     CRServo intakeServo;
     PIDController PIDController;
+    TouchSensor limitSensorMax;
+    TouchSensor limitSensorMin;
+
 
 
     @Override
@@ -34,6 +38,10 @@ public class RobotCentricDrive extends LinearOpMode {
         backLeftMotor = hardwareMap.dcMotor.get("leftBack");
         frontRightMotor = hardwareMap.dcMotor.get("rightFront");
         backRightMotor = hardwareMap.dcMotor.get("rightBack");
+
+        limitSensorMax = hardwareMap.get(TouchSensor.class, "armSensorMax");
+        limitSensorMin = hardwareMap.get(TouchSensor.class, "armSensorMin");
+
 
         pidPositions = new HashMap<>();
 
@@ -123,7 +131,13 @@ public class RobotCentricDrive extends LinearOpMode {
     }
 
     public void arm(){
-        armMotor.setPower(gamepad2.left_stick_y);
+            if(!limitSensorMin.isPressed() && gamepad2.left_stick_y > 0.5){
+                armMotor.setPower(gamepad2.left_stick_y );
+            } else if(!limitSensorMax.isPressed() && gamepad2.left_stick_y < -0.5){
+                armMotor.setPower(gamepad2.left_stick_y );
+        } else {
+                armMotor.setPower(0);
+            }
 
         if(gamepad2.a){
             armMotor.setPower(PIDController.calculate(pidPositions.get("ArmRecharge"), armMotor.getCurrentPosition()));
